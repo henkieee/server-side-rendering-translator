@@ -4,8 +4,8 @@ var http = require('http'),
     React = require('react'),
     DOM = React.DOM, body = DOM.body, div = DOM.div, script = DOM.script,
     // This is our React component, shared by server and browser thanks to browserify
-    App = React.createFactory(require('./App'))
-
+    App = React.createFactory(require('./App'));
+    hostName = require("os").hostname();
 
 // Just create a plain old HTTP server that responds to two endpoints ('/' and
 // '/bundle.js') This would obviously work similarly with any higher level
@@ -17,7 +17,7 @@ http.createServer(function(req, res) {
   // pointing to the client-side code
   if (req.url == '/') {
 
-    res.setHeader('Content-Type', 'text/html')
+    res.setHeader('Content-Type', 'text/html;charset=utf-8')
 
     // `props` represents the data to be passed in to the React component for
     // rendering - just as you would pass data, or expose variables in
@@ -25,14 +25,24 @@ http.createServer(function(req, res) {
     // here (with some potentially dangerous values for testing), but you could
     // imagine this would be objects typically fetched async from a DB,
     // filesystem or API, depending on the logged-in user, etc.
+    var languages = ['NL', 'DE', 'EN'],
+        testHost = 'www.domain.de';
+
+    //TODO EN is not a top-level domain like Nl and DE
+    languages.forEach(function (lang, i, langsArr)
+    {
+      lang = lang.toLowerCase();
+      if( hostName.indexOf('.' + lang) > -1 && lang !== langsArr[0].toUpperCase() )
+      {
+        var oldDefaultLang = langsArr[0];
+        langsArr[0] = langsArr[i];
+        langsArr[i] = oldDefaultLang;
+      }
+    });
+
     var props = {
-      items: [
-        'Item 0',
-        'Item 1',
-        'Item </script>',
-        'Item <!--inject!-->',
-      ]
-    }
+      languages: languages
+    };
 
     // Here we're using React to render the outer body, so we just use the
     // simpler renderToStaticMarkup function, but you could use any templating
@@ -43,7 +53,7 @@ http.createServer(function(req, res) {
       // pass our data in as `props`. This div is the same one that the client
       // will "render" into on the browser from browser.js
       div({id: 'content', dangerouslySetInnerHTML: {__html:
-        React.renderToString(App(props))
+        React.renderToString( App(props) )
       }}),
 
       // The props should match on the client and server, so we stringify them
